@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring GI Gunung Sahari</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Tema Default (Dark Mode) */
+            --bg-body: #050a14;
+            --bg-card: rgba(10, 20, 35, 0.9);
+            --text-main: #00f2ff;
+            --text-secondary: #ffffff;
+            --accent-yellow: #fbff00;
+            --border-color: rgba(0, 242, 255, 0.3);
+            --border-glow: 0 0 30px rgba(0, 242, 255, 0.2);
+            
+            /* Status Colors */
+            --status-green: #00ff9d;
+            --status-orange: #ff9d00;
+            --status-red: #ff3333;
+            --particle-color: 'rgba(0, 242, 255, 0.5)';
+        }
+
+        .light-mode {
+            --bg-body: #f0f4f8;
+            --bg-card: rgba(255, 255, 255, 0.95);
+            --text-main: #0066cc;
+            --text-secondary: #1a202c;
+            --accent-yellow: #d4a100;
+            --border-color: rgba(0, 102, 204, 0.3);
+            --border-glow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --particle-color: 'rgba(0, 102, 204, 0.3)';
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.5s ease;
+        }
+
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .dashboard {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            background: var(--bg-card);
+            padding: 50px 70px;
+            border-radius: 24px;
+            border: 2px solid var(--border-color);
+            box-shadow: var(--border-glow);
+            backdrop-filter: blur(20px);
+            max-width: 95%;
+            width: 750px; /* Diperlebar */
+            transition: all 0.5s ease;
+        }
+
+        /* Tombol Toggle Mode */
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: 2px solid var(--text-main);
+            color: var(--text-main);
+            padding: 8px 15px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-btn:hover {
+            background: var(--text-main);
+            color: var(--bg-body);
+            box-shadow: 0 0 15px var(--text-main);
+        }
+
+        .header-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .logo-pln {
+            width: 80px; /* Diperbesar */
+            margin-bottom: 5px;
+            filter: drop-shadow(0 0 10px rgba(251, 255, 0, 0.6));
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.8rem; /* Ukuran diperbesar signifikan */
+            letter-spacing: 3px;
+            margin: 0;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.8);
+            color: var(--text-secondary);
+            line-height: 1.2;
+        }
+
+        .location-sub {
+            font-size: 1.1rem; /* Diperbesar */
+            color: var(--text-main);
+            opacity: 0.8;
+            margin-top: 8px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Date & Clock */
+        .date-display {
+            font-size: 1.8rem; /* Diperbesar */
+            color: var(--accent-yellow);
+            letter-spacing: 2px;
+            margin-top: 20px;
+            font-weight: 700;
+        }
+
+        .clock-wrapper {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 7rem; /* Ukuran Jam Sangat Besar */
+            font-weight: 900;
+            margin: 10px 0 30px 0;
+            color: var(--text-main);
+            filter: drop-shadow(0 0 20px var(--text-main));
+            letter-spacing: 5px;
+        }
+
+        /* Indikator Lampu */
+        .indicator-panel {
+            display: flex;
+            justify-content: center;
+            gap: 50px; /* Jarak diperlebar */
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Jika Light Mode aktif, background panel sedikit gelap */
+        .light-mode .indicator-panel {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0,0,0,0.1);
+        }
+
+        .indicator-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .light {
+            width: 30px; /* Ukuran lampu diperbesar */
+            height: 30px;
+            border-radius: 50%;
+            background-color: #111;
+            border: 3px solid #333;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .light.green { border-color: var(--status-green); }
+        .light.orange { border-color: var(--status-orange); }
+        .light.red { border-color: var(--status-red); }
+
+        /* Animation Class */
+        .light.active.green {
+            background-color: var(--status-green);
+            box-shadow: 0 0 20px var(--status-green), 0 0 40px var(--status-green);
+        }
+        .light.active.orange {
+            background-color: var(--status-orange);
+            box-shadow: 0 0 20px var(--status-orange), 0 0 40px var(--status-orange);
+        }
+        .light.active.red {
+            background-color: var(--status-red);
+            box-shadow: 0 0 20px var(--status-red), 0 0 40px var(--status-red);
+            animation: criticalPulse 0.5s infinite alternate;
+        }
+
+        .label-light {
+            font-size: 1.2rem; /* Ukuran font label diperbesar */
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .footer-text {
+            margin-top: 30px;
+            font-size: 1.4rem; /* Ukuran footer diperbesar */
+            line-height: 1.6;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            padding-top: 25px;
+            font-weight: 500;
+        }
+
+        .highlight { color: var(--accent-yellow); font-weight: bold; }
+        .danger { color: var(--status-red); font-weight: bold; text-decoration: underline; }
+
+        @keyframes criticalPulse {
+            from { opacity: 0.7; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.15); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .dashboard { padding: 30px 20px; width: 100%; border-radius: 0; }
+            h1 { font-size: 1.8rem; }
+            .clock-wrapper { font-size: 4rem; }
+            .indicator-panel { gap: 20px; }
+            .toggle-btn { top: 10px; right: 10px; padding: 5px 10px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="dashboard">
+        <!-- Tombol Toggle Mode Baru -->
+        <button class="toggle-btn" id="themeToggle" onclick="toggleTheme()">
+            <span id="iconMode">☀️</span> <span id="textMode">Light</span>
+        </button>
+
+        <div class="header-section">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/20/Logo_PLN.svg" alt="PLN Logo" class="logo-pln">
+            <h1>Gardu Induk Gunung Sahari</h1>
+            <div class="location-sub">System Monitoring Unit - Jakarta</div>
+        </div>
+
+        <div id="tanggalLive" class="date-display">MEMUAT TANGGAL...</div>
+        <div class="clock-wrapper" id="jamLive">00:00:00</div>
+
+        <div class="indicator-panel">
+            <div class="indicator-item">
+                <div class="light green" id="light-green"></div>
+                <span class="label-light">Normal</span>
+            </div>
+            <div class="indicator-item">
+                <div class="light orange" id="light-orange"></div>
+                <span class="label-light">Warning</span>
+            </div>
+            <div class="indicator-item">
+                <div class="light red" id="light-red"></div>
+                <span class="label-light">Trip</span>
+            </div>
+        </div>
+
+        <div class="footer-text">
+            Catat dan input <span class="highlight">Penyulang</span>. <br>
+            Jika ada gangguan maka <span class="danger">LAPORKAN DCC BAGIAN BARAT</span>, <br>
+            melakukan pembebasan tegangan atau penormalan.
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIKA JAM & TANGGAL ---
+        function updateDateTime() {
+            const now = new Date();
+            const timeOptions = { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const timeString = new Intl.DateTimeFormat('id-ID', timeOptions).format(now);
+            document.getElementById('jamLive').textContent = timeString.replace(/\./g, ':');
+
+            const dateOptions = { timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            const dateString = new Intl.DateTimeFormat('id-ID', dateOptions).format(now);
+            document.getElementById('tanggalLive').textContent = dateString;
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // --- LOGIKA LAMPU INDIKATOR (Jeda 7.5 Detik) ---
+        const lightGreen = document.getElementById('light-green');
+        const lightOrange = document.getElementById('light-orange');
+        const lightRed = document.getElementById('light-red');
+        let currentState = 0; // 0: Green, 1: Orange, 2: Red
+
+        function updateIndicators() {
+            // Reset semua
+            lightGreen.classList.remove('active');
+            lightOrange.classList.remove('active');
+            lightRed.classList.remove('active');
+
+            // Nyalakan yang sesuai
+            if (currentState === 0) lightGreen.classList.add('active');
+            else if (currentState === 1) lightOrange.classList.add('active');
+            else lightRed.classList.add('active');
+
+            // Looping simulasi (Uncomment baris bawah untuk demo otomatis)
+            currentState++;
+            if (currentState > 2) currentState = 0;
+        }
+
+        // Set interval 7.5 detik (7500ms)
+        setInterval(updateIndicators, 7500);
+        updateIndicators(); // Panggil sekali saat load
+
+        // --- LOGIKA TOGGLE TEMA ---
+        let isDarkMode = true;
+        
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('iconMode');
+            const text = document.getElementById('textMode');
+
+            if (isDarkMode) {
+                body.classList.add('light-mode');
+                icon.textContent = "🌙"; // Ikon bulan untuk dark mode
+                text.textContent = "Dark";
+                isDarkMode = false;
+            } else {
+                body.classList.remove('light-mode');
+                icon.textContent = "☀️"; // Ikon matahari untuk light mode
+                text.textContent = "Light";
+                isDarkMode = true;
+            }
+            // Re-draw canvas agar warna partikel berubah
+            createParticles(); 
+        }
+
+        // --- ANIMASI BACKGROUND ---
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const particleCount = 50;
+
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.speedX = (Math.random() - 0.5) * 1.5;
+                this.speedY = (Math.random() - 0.5) * 1.5;
+                this.size = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+            }
+            draw() {
+                // Cek tema untuk warna partikel
+                const color = isDarkMode ? 'rgba(0, 242, 255, 0.6)' : 'rgba(0, 80, 160, 0.5)';
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Warna garis koneksi
+            const lineColor = isDarkMode ? 'rgba(0, 242, 255, ' : 'rgba(0, 80, 160, ';
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                
+                for (let j = i; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 120) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = lineColor + (1 - distance/120) + ')';
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            initCanvas();
+            createParticles();
+        });
+
+        initCanvas();
+        createParticles();
+        animate();
+    </script>
+</body>
+</html>
